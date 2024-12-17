@@ -1,0 +1,105 @@
+-- A_Astronaut Animation Script (Modified for Potential Remote Loading)
+
+local function setupAstronautAnimations(character)
+    local humanoid = character:WaitForChild("Humanoid")
+    local animator = humanoid:WaitForChild("Animator")
+
+    -- Table to store Astronaut animation IDs
+    local astronautAnimationIds = {
+        idle1 = "http://www.roblox.com/asset/?id=616136790",
+        idle2 = "http://www.roblox.com/asset/?id=616138447",
+        walk = "http://www.roblox.com/asset/?id=4708193840",
+        run = "http://www.roblox.com/asset/?id=4708192705",
+        jump = "http://www.roblox.com/asset/?id=616008936",
+        fall = "http://www.roblox.com/asset/?id=616005863",
+        climb = "http://www.roblox.com/asset/?id=616003713"
+        -- Add other animation IDs (swim, etc.) if needed
+    }
+
+    -- Table to store loaded AnimationTracks
+    local astronautAnimations = {}
+
+    -- Function to load an animation
+    local function loadAnimation(id)
+        local animation = Instance.new("Animation")
+        animation.AnimationId = id
+        local track = animator:LoadAnimation(animation)
+        return track
+    end
+
+    -- Preload all Astronaut animations
+    for name, id in pairs(astronautAnimationIds) do
+        astronautAnimations[name] = loadAnimation(id)
+    end
+
+    -- Function to play an animation
+    local function playAnimation(name)
+        if astronautAnimations[name] then
+            astronautAnimations[name]:Play()
+        end
+    end
+
+    -- Function to stop an animation
+    local function stopAnimation(name)
+        if astronautAnimations[name] then
+            astronautAnimations[name]:Stop()
+        end
+    end
+
+    -- Connect to Humanoid state changes
+    humanoid.StateChanged:Connect(function(oldState, newState)
+        if newState == Enum.HumanoidStateType.Running then
+            if humanoid.MoveDirection.Magnitude > 0 then
+                if humanoid.WalkSpeed > 16 then -- Assuming run speed is greater than 16
+                    stopAnimation("walk")
+                    playAnimation("run")
+                else
+                    stopAnimation("run")
+                    playAnimation("walk")
+                end
+            else
+                stopAnimation("walk")
+                stopAnimation("run")
+                playAnimation("idle1") -- Or idle2, or alternate between them
+            end
+        elseif newState == Enum.HumanoidStateType.Jumping then
+            stopAnimation("idle1")
+            stopAnimation("idle2")
+            playAnimation("jump")
+        elseif newState == Enum.HumanoidStateType.Freefall then
+            stopAnimation("idle1")
+            stopAnimation("idle2")
+           playAnimation("fall")
+        elseif newState == Enum.HumanoidStateType.Climbing then
+            stopAnimation("idle1")
+            stopAnimation("idle2")
+            playAnimation("climb")
+        elseif newState == Enum.HumanoidStateType.Landed then  -- when the character lands from a jump
+            playAnimation("idle1")
+        elseif newState == Enum.HumanoidStateType.GettingUp then  -- Plays right after .Landed, for R15 avatars
+            playAnimation("idle1")
+        elseif newState == Enum.HumanoidStateType.Seated then
+            -- no need to interrupt with an astronaut animation
+        elseif newState == Enum.HumanoidStateType.PlatformStanding then
+            -- no need to interrupt with an astronaut animation
+        elseif newState == Enum.HumanoidStateType.Ragdoll then
+            -- no need to interrupt with an astronaut animation
+        elseif newState == Enum.HumanoidStateType.Swimming then
+            -- no need to interrupt with an astronaut animation
+        else -- Idle, or other states
+            stopAnimation("run")
+            stopAnimation("walk")
+            stopAnimation("jump")
+            stopAnimation("fall")
+            stopAnimation("climb")
+            playAnimation("idle1") -- Or idle2, or alternate between them
+        end
+    end)
+
+    print("A_Astronaut animations setup.")
+end
+
+-- Example of how it might be called from an executor:
+-- setupAstronautAnimations(game.Players.LocalPlayer.Character)
+
+return setupAstronautAnimations
